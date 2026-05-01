@@ -1,0 +1,140 @@
+{
+  "name": "AI Shop Agent MVP",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Start manuell",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "shop-name",
+              "name": "shopName",
+              "value": "Demo Shop",
+              "type": "string"
+            },
+            {
+              "id": "shop-url",
+              "name": "shopUrl",
+              "value": "https://example.com",
+              "type": "string"
+            },
+            {
+              "id": "shop-niche",
+              "name": "niche",
+              "value": "Mode",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-shop-data",
+      "name": "Shop Daten eintragen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.shopUrl }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 n8n Shop Agent"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "load-website",
+      "name": "Website laden",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $items('Shop Daten eintragen')[0].json;\nconst html = String($json.body || $json.data || $json || '');\nconst emailRegex = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}/g;\nconst emails = [...new Set(html.match(emailRegex) || [])].filter(e => !e.match(/\\.(png|jpg|jpeg|webp|gif)$/i));\nconst lower = html.toLowerCase();\nconst chatbotWords = ['chatbot', 'livechat', 'live chat', 'intercom', 'zendesk', 'tawk.to', 'tidio', 'crisp', 'gorgias'];\nconst chatbotFound = chatbotWords.some(word => lower.includes(word));\nlet score = 50;\nif (emails.length > 0) score += 25;\nif (!chatbotFound) score += 20;\nif (original.niche) score += 5;\nscore = Math.min(score, 100);\nconst problem = chatbotFound\n  ? 'Ich habe gesehen, dass Sie eventuell schon eine Chat-Loesung nutzen. Vielleicht kann man diese noch besser fuer Verkauf und Kundenservice einsetzen.'\n  : 'Ich habe keinen klaren KI-Chatbot auf Ihrer Website gesehen. Dadurch bleiben viele Kundenfragen eventuell unbeantwortet.';\nconst message = `Betreff: Kurze Idee fuer ${original.shopName}\\n\\nHallo ${original.shopName}-Team,\\n\\nich habe mir Ihre Website angeschaut und hatte eine kurze Idee.\\n\\n${problem}\\n\\nIch baue einfache KI-Kundenservice-Bots fuer Online-Shops. Der Bot kann haeufige Fragen beantworten und Kunden schneller helfen.\\n\\nHaetten Sie Interesse an einer kostenlosen Mini-Analyse Ihrer Website?\\n\\nViele Gruesse\\nKadir`;\nreturn [{\n  json: {\n    shopName: original.shopName,\n    shopUrl: original.shopUrl,\n    niche: original.niche,\n    emails: emails.join(', '),\n    chatbotFound,\n    score,\n    note: chatbotFound ? 'Hat eventuell schon Chat oder Support-Tool.' : 'Guter Kandidat, kein klarer Chatbot gefunden.',\n    message\n  }\n}];"
+      },
+      "id": "analyze-website",
+      "name": "Website auswerten",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start manuell": {
+      "main": [
+        [
+          {
+            "node": "Shop Daten eintragen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shop Daten eintragen": {
+      "main": [
+        [
+          {
+            "node": "Website laden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Website laden": {
+      "main": [
+        [
+          {
+            "node": "Website auswerten",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "ai-shop-agent-mvp",
+  "tags": []
+}
