@@ -1,0 +1,105 @@
+{
+  "name": "Pet Shop Chatbot MVP",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Start manuell",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "question",
+              "name": "customerQuestion",
+              "value": "Welches Futter ist gut fuer einen Hund mit empfindlichem Magen?",
+              "type": "string"
+            },
+            {
+              "id": "shopname",
+              "name": "shopName",
+              "value": "PfotenLiebe Shop",
+              "type": "string"
+            },
+            {
+              "id": "supportmail",
+              "name": "supportEmail",
+              "value": "support@example.com",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-question",
+      "name": "Kundenfrage eintragen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const q = String($json.customerQuestion || '').toLowerCase();\nconst shopName = $json.shopName || 'unser Shop';\nconst supportEmail = $json.supportEmail || 'support@example.com';\nlet category = 'allgemein';\nlet answer = '';\n\nconst hasAny = (words) => words.some(w => q.includes(w));\n\nif (hasAny(['futter', 'trockenfutter', 'nassfutter', 'essen', 'ernaehrung', 'ernährung', 'magen', 'sensibel', 'allergie', 'getreide'])) {\n  category = 'futterberatung';\n  answer = `Gerne helfe ich dir bei der Futterauswahl. Bei empfindlichem Magen oder Allergien empfehlen wir meistens ein gut vertraegliches Futter mit klarer Zutatenliste. Achte besonders auf wenige Proteinquellen, getreidefreie Varianten und eine langsame Umstellung ueber 7 bis 10 Tage. Wenn dein Tier starke Beschwerden hat, frage bitte zusaetzlich einen Tierarzt. Im ${shopName} kannst du nach sensitivem Futter oder hypoallergenen Produkten schauen.`;\n} else if (hasAny(['versand', 'lieferung', 'lieferzeit', 'paket', 'wann kommt'])) {\n  category = 'versand';\n  answer = `Die Lieferzeit betraegt normalerweise 2 bis 5 Werktage. Sobald deine Bestellung versendet wurde, bekommst du eine Versandbestaetigung mit Sendungsverfolgung. Falls du nach einigen Tagen nichts erhalten hast, schreibe bitte an ${supportEmail}.`;\n} else if (hasAny(['rueckgabe', 'rückgabe', 'retoure', 'zurueck', 'zurück', 'umtausch', 'widerruf'])) {\n  category = 'rueckgabe';\n  answer = `Du kannst unbenutzte und originalverpackte Artikel normalerweise innerhalb der Widerrufsfrist zurueckgeben. Geoeffnetes Futter oder benutzte Hygieneartikel koennen aus Sicherheitsgruenden oft nicht zurueckgenommen werden. Bitte kontaktiere ${supportEmail}, damit wir dir die passenden Rueckgabe-Schritte schicken koennen.`;\n} else if (hasAny(['welpe', 'puppy', 'kitten', 'jungtier', 'baby katze', 'baby hund'])) {\n  category = 'jungtiere';\n  answer = `Fuer Welpen und Kitten ist spezielles Junior-Futter wichtig, weil junge Tiere andere Naehrstoffe brauchen als erwachsene Tiere. Achte auf die Altersangabe, die Futtermenge und eine langsame Umstellung. Wenn du uns Alter, Rasse und Gewicht nennst, koennen wir dir besser helfen.`;\n} else if (hasAny(['spielzeug', 'leine', 'halsband', 'bett', 'napf', 'zubehoer', 'zubehör'])) {\n  category = 'zubehoer';\n  answer = `Bei Zubehoer kommt es vor allem auf Groesse, Gewicht und Verhalten deines Tieres an. Fuer Hunde sind robuste Spielzeuge und passende Leinen wichtig. Fuer Katzen eignen sich Kratzmoeglichkeiten und sichere Spielzeuge. Wenn du mir sagst, fuer welches Tier du suchst, kann ich dir genauer helfen.`;\n} else if (hasAny(['kontakt', 'support', 'hilfe', 'email', 'telefon', 'problem'])) {\n  category = 'support';\n  answer = `Du erreichst unseren Support unter ${supportEmail}. Beschreibe am besten kurz dein Anliegen und fuege bei Bestellungen deine Bestellnummer hinzu. Dann koennen wir dir schneller helfen.`;\n} else {\n  answer = `Danke fuer deine Frage. Ich helfe dir gerne zu Futter, Versand, Rueckgabe, Produkten und Support im ${shopName}. Kannst du deine Frage bitte etwas genauer stellen? Zum Beispiel: Geht es um Hundefutter, Katzenfutter, Versand oder Rueckgabe?`;\n}\n\nreturn [{\n  json: {\n    shopName,\n    customerQuestion: $json.customerQuestion,\n    category,\n    answer,\n    nextStep: 'Diese Antwort kann direkt im Website-Chat angezeigt werden.'\n  }\n}];"
+      },
+      "id": "chatbot-answer",
+      "name": "Chatbot Antwort erstellen",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "final",
+              "name": "chatbotResponse",
+              "value": "={{ $json.answer }}",
+              "type": "string"
+            },
+            {
+              "id": "category",
+              "name": "category",
+              "value": "={{ $json.category }}",
+              "type": "string"
+            },
+            {
+              "id": "next",
+              "name": "nextStep",
+              "value": "={{ $json.nextStep }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "final-output",
+      "name": "Antwort anzeigen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [760, 0]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Start manuell": {
+      "main": [[{"node": "Kundenfrage eintragen", "type": "main", "index": 0}]]
+    },
+    "Kundenfrage eintragen": {
+      "main": [[{"node": "Chatbot Antwort erstellen", "type": "main", "index": 0}]]
+    },
+    "Chatbot Antwort erstellen": {
+      "main": [[{"node": "Antwort anzeigen", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {"executionOrder": "v1"},
+  "versionId": "1",
+  "meta": {"templateCredsSetupCompleted": true},
+  "id": "pet-shop-chatbot-mvp",
+  "tags": []
+}
